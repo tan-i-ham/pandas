@@ -1108,6 +1108,24 @@ class TestParquetPyArrow(Base):
         result = read_parquet(temp_file, pa, filters=[("a", "==", 0)])
         assert len(result) == 1
 
+    @pytest.mark.parametrize(
+        "op, value, expected_idx",
+        [
+            ("==", "2024-07", [6]),
+            (">=", "2024-07", [6, 7, 8, 9, 10, 11]),
+        ],
+    )
+    def test_filter_period(self, pa, temp_file, op, value, expected_idx):
+        # https://github.com/pandas-dev/pandas/issues/62769
+        df = pd.DataFrame({"a": pd.period_range("2024-01", "2024-12", freq="M")})
+        df.to_parquet(temp_file, engine=pa)
+
+        result = read_parquet(
+            temp_file, pa, filters=[("a", op, pd.Period(value, freq="M"))]
+        )
+        expected = df.iloc[expected_idx].reset_index(drop=True)
+        tm.assert_frame_equal(result, expected)
+
     @pytest.mark.filterwarnings("ignore:make_block is deprecated:DeprecationWarning")
     @pytest.mark.filterwarnings(
         "ignore:.*values returning.*:pandas.errors.Pandas4Warning"
