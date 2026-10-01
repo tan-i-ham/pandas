@@ -1108,6 +1108,9 @@ class TestParquetPyArrow(Base):
         result = read_parquet(temp_file, pa, filters=[("a", "==", 0)])
         assert len(result) == 1
 
+    @pytest.mark.xfail(
+        reason="GH#62769: pyarrow can't convert a Period scalar in filters",
+    )
     @pytest.mark.parametrize(
         "op, value, expected_idx",
         [
